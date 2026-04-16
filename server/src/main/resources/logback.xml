@@ -1,0 +1,18 @@
+<!-- src/main/resources/logback.xml -->
+<configuration>
+    <!-- Silence Moquette internal logs — only show our println() -->
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Silence noisy Moquette logs -->
+    <logger name="io.moquette"      level="ERROR"/>
+    <logger name="io.netty"         level="ERROR"/>
+    <logger name="org.eclipse.paho" level="ERROR"/>
+
+    <root level="ERROR">
+        <appender-ref ref="STDOUT"/>
+    </root>
+</configuration>
