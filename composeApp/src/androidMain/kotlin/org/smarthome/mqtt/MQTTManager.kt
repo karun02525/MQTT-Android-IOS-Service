@@ -67,10 +67,11 @@ class MQTTManager private constructor() {
 
             // ── Connection options ─────────────────────────────────
             val options = MqttConnectOptions().apply {
-                isCleanSession      = true
-                connectionTimeout   = 10          // 10 seconds
-                keepAliveInterval   = 30          // Ping every 30s
-                isAutomaticReconnect = true       // Auto reconnect on drop
+                isCleanSession       = true
+                connectionTimeout    = 10          // 10 seconds
+                keepAliveInterval    = 60          // Ping every 60s (real device needs longer)
+                isAutomaticReconnect = true        // Auto reconnect on drop
+                maxReconnectDelay    = 5000        // Max 5s between reconnect attempts
             }
 
             // ── Connect (BLOCKING) ────────────────────────────────

@@ -24,10 +24,15 @@ class MQTTManager: NSObject {
 
     // ── Broker Config ─────────────────────────────────────────────
     // iOS Simulator  →  "127.0.0.1"
-    // Real iPhone    →  Your Mac WiFi IP  e.g. "192.168.1.100"
-    //                   Mac: System Settings → WiFi → Details → IP
-    private let host : String = "127.0.0.1"
-    private let port : UInt16 = 1883
+    // Real iPhone    →  Your Mac WiFi IP shown in broker startup log
+    //   e.g. "192.168.1.100"
+    // Override: Xcode → Edit Scheme → Run → Environment Variables → MQTT_HOST
+    // ── Server IP shared by Android + iOS ────────────────────────
+    static var defaultHost: String {
+        ProcessInfo.processInfo.environment["MQTT_HOST"] ?? "192.168.0.101"
+    }
+
+    private let port: UInt16 = 1883
 
     // ── Topics ────────────────────────────────────────────────────
     private let topicResponse = "vehicle/response"
@@ -36,9 +41,9 @@ class MQTTManager: NSObject {
     private override init() {}
 
     // ══════════════════════════════════════════════════════════════
-    //  CONNECT
+    //  CONNECT  — host defaults to MQTT_HOST env var or "127.0.0.1"
     // ══════════════════════════════════════════════════════════════
-    func connect() {
+    func connect(host: String = MQTTManager.defaultHost) {
         let clientID = "ios-\(UUID().uuidString.prefix(6))"
 
         client = CocoaMQTT(clientID: clientID, host: host, port: port)

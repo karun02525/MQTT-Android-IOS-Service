@@ -8,8 +8,8 @@ plugins {
 group = "org.smarthome"
 version = "1.0.0"
 application {
-    mainClass.set("org.smarthome.ApplicationKt")
-    
+    mainClass.set("org.smarthome.MainKt")
+
     val isDevelopment: Boolean = project.ext.has("development")
     applicationDefaultJvmArgs = listOf("-Dio.ktor.development=$isDevelopment")
 }

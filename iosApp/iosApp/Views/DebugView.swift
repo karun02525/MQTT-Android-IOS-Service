@@ -56,6 +56,30 @@ struct StatusHeader: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
+            // ── Host + Connect Row ────────────────────────────────────
+            HStack(spacing: 8) {
+                TextField("Broker IP", text: $vm.brokerHost)
+                    .font(.system(.caption, design: .monospaced))
+                    .foregroundStyle(.green)
+                    .padding(6)
+                    .background(Color.white.opacity(0.08))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .keyboardType(.decimalPad)
+                    .autocorrectionDisabled()
+
+                Text(":\(1883)")
+                    .font(.caption).foregroundStyle(.gray)
+
+                Button(vm.connectionState.isConnected ? "⏹ Disc." : "▶ Connect") {
+                    vm.toggleConnection()
+                }
+                .font(.caption).fontWeight(.semibold)
+                .padding(.horizontal, 10).padding(.vertical, 6)
+                .background(vm.connectionState.isConnected ? Color.red.opacity(0.7) : Color.green.opacity(0.7))
+                .foregroundStyle(.white)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+            }
+
             HStack {
                 Circle()
                     .fill(vm.connectionState.color)
@@ -65,7 +89,7 @@ struct StatusHeader: View {
                     Text(vm.connectionState.label)
                         .font(.subheadline).fontWeight(.semibold)
                         .foregroundStyle(.white)
-                    Text("127.0.0.1:1883")
+                    Text("\(vm.brokerHost):1883 → vehicle/response")
                         .font(.caption2).foregroundStyle(.gray)
                 }
 

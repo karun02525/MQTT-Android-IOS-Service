@@ -25,7 +25,9 @@ class VehicleBridge(
     // ── Connect and process incoming messages ─────────────────
     fun connectAndProcess() {
         val options = MqttConnectOptions().apply {
-            isCleanSession = true
+            isCleanSession       = true
+            keepAliveInterval    = 60
+            isAutomaticReconnect = true
         }
 
         client.setCallback(object : MqttCallback {
@@ -100,12 +102,12 @@ class VehicleBridge(
     }
 
     // ── Build + Publish full response to iOS ──────────────────
-    // Only publish when we have BOTH OBD (010C+010D) AND GPS
+    // Publishes when we have at least RPM + Speed (GPS is optional, defaults to 0.0)
     private fun tryPublishResponse(deviceId: String) {
-        val obd = obdCache[deviceId]        ?: return  // No OBD data yet
-        val gps = gpsCache[deviceId]        ?: return  // No GPS yet
-        val rpm   = obd["010C"]             ?: return  // No RPM yet
-        val speed = obd["010D"]             ?: return  // No Speed yet
+        val obd   = obdCache[deviceId] ?: return   // No OBD data yet
+        val rpm   = obd["010C"]        ?: return   // No RPM yet
+        val speed = obd["010D"]        ?: return   // No Speed yet
+        val gps   = gpsCache[deviceId] ?: Pair(0.0, 0.0)   // GPS is optional
 
         // Build the JSON response
         val responseJson = buildJsonObject {
@@ -123,8 +125,14 @@ class VehicleBridge(
         }
         client.publish(TOPIC_RESPONSE, msg)
 
+        // ✅ Clear cache after publish so next iOS update
+        //    requires a fresh full set from Android (RPM + Speed + GPS)
+        obdCache.remove(deviceId)
+        gpsCache.remove(deviceId)
+
         println("   📤 [KTOR BRIDGE] Published → $TOPIC_RESPONSE")
         println("   JSON: $responseJson")
+        println("   🔄 Cache cleared for deviceId=$deviceId")
     }
 
     fun disconnect() {

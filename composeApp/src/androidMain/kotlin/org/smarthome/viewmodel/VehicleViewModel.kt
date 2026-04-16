@@ -41,10 +41,9 @@ class VehicleViewModel : ViewModel(), MQTTListener {
     private val _totalSent = MutableStateFlow(0)
     val totalSent: StateFlow<Int> = _totalSent.asStateFlow()
 
-    // ── Broker Host (configurable from UI) ────────────────────────
-    // Emulator  → "10.0.2.2"   maps to host machine's localhost
-    // Real phone → "192.168.x.x"  your Mac/PC WiFi IP
-    private val _brokerHost = MutableStateFlow("10.0.2.2")
+    // ── Broker Host — same server IP used by Android + iOS ───────
+    // Server machine IP: 192.168.0.101
+    private val _brokerHost = MutableStateFlow("192.168.0.101")
     val brokerHost: StateFlow<String> = _brokerHost.asStateFlow()
 
     // ── GPS coordinates (editable from CommandScreen) ─────────────
@@ -103,14 +102,18 @@ class VehicleViewModel : ViewModel(), MQTTListener {
     fun sendRPMCommand() {
         if (!checkConnected()) return
         val payload = OBDPayload(command = "010C", deviceId = deviceId).toJson()
-        mqtt.publish(MQTTManager.TOPIC_COMMANDS, payload)
+        viewModelScope.launch(Dispatchers.IO) {
+            mqtt.publish(MQTTManager.TOPIC_COMMANDS, payload)
+        }
     }
 
     // ── Send Speed Command (OBD PID 010D) ─────────────────────────
     fun sendSpeedCommand() {
         if (!checkConnected()) return
         val payload = OBDPayload(command = "010D", deviceId = deviceId).toJson()
-        mqtt.publish(MQTTManager.TOPIC_COMMANDS, payload)
+        viewModelScope.launch(Dispatchers.IO) {
+            mqtt.publish(MQTTManager.TOPIC_COMMANDS, payload)
+        }
     }
 
     // ── Send GPS ──────────────────────────────────────────────────
@@ -119,7 +122,9 @@ class VehicleViewModel : ViewModel(), MQTTListener {
         val payload = GPSPayload(
             lat = _lat.value, lng = _lng.value, deviceId = deviceId
         ).toJson()
-        mqtt.publish(MQTTManager.TOPIC_GPS, payload)
+        viewModelScope.launch(Dispatchers.IO) {
+            mqtt.publish(MQTTManager.TOPIC_GPS, payload)
+        }
     }
 
     // ── Start Auto Simulation ─────────────────────────────────────
@@ -187,10 +192,18 @@ class VehicleViewModel : ViewModel(), MQTTListener {
     }
 
     override fun onDisconnected(reason: String?) {
-        _connectionState.value = ConnectionState.DISCONNECTED
-        _statusMessage.value   = reason?.let { "Disconnected: $it" } ?: "Disconnected"
-        _isSimulating.value    = false
-        simulationJob?.cancel()
+        // If reason is non-null it's an unexpected drop — show CONNECTING (auto-reconnect is on)
+        // If reason is null it was a deliberate disconnect()
+        if (reason != null) {
+            _connectionState.value = ConnectionState.CONNECTING
+            _statusMessage.value   = "⚠️ Connection lost — reconnecting… ($reason)"
+            println("⚠️ [VM] Unexpected disconnect, auto-reconnect in progress")
+        } else {
+            _connectionState.value = ConnectionState.DISCONNECTED
+            _statusMessage.value   = "Disconnected"
+            _isSimulating.value    = false
+            simulationJob?.cancel()
+        }
     }
 
     // Called when we receive data on vehicle/response

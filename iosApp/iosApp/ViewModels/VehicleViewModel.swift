@@ -15,9 +15,14 @@ class VehicleViewModel: ObservableObject, MQTTManagerDelegate {
     @Published var rawMessages     : [RawMessage]    = []
     @Published var totalReceived   : Int             = 0
 
-    // ── Init ──────────────────────────────────────────────────────
+    // ── Broker host — same IP used by Android + iOS ───────────────
+    // Server machine IP: 192.168.0.101
+    @Published var brokerHost: String = MQTTManager.defaultHost
+
+    // ── Init — auto-connect on launch ─────────────────────────────
     init() {
         mqtt.delegate = self
+        connect()  // Auto-connect so iOS immediately listens for data
     }
 
     // ══════════════════════════════════════════════════════════════
@@ -26,7 +31,7 @@ class VehicleViewModel: ObservableObject, MQTTManagerDelegate {
 
     func connect() {
         connectionState = .connecting
-        mqtt.connect()
+        mqtt.connect(host: brokerHost)  // pass editable host
     }
 
     func disconnect() {
